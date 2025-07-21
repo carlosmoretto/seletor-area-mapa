@@ -1,59 +1,132 @@
-import React from 'react';
+// src/App.js
+import React, { useState } from 'react';
+import Header from './components/Header';
+import MapaReal from './components/MapaReal';
+import PainelInfo from './components/PainelInfo';
+import ListaAreas from './components/ListaAreas';
+import PainelApiExterna from './components/PainelApiExterna';
+import BuscadorEndereco from './components/BuscadorEndereco';
+import useApi from './hooks/useApi';
+import ErrorBoundary from './components/ErrorBoundary';
 
 function App() {
+  const [coordenadas, setCoordenadas] = useState(null);
+  const [area, setArea] = useState(0);
+  const [selecionando, setSelecionando] = useState(false);
+  
+  const { areas, loading, error, salvarArea, deletarArea } = useApi();
+
+  const handleSalvarArea = async () => {
+    if (!coordenadas || !area) {
+      alert('Selecione uma área primeiro!');
+      return;
+    }
+
+    const nomeArea = prompt('Nome da área:');
+    if (!nomeArea) return;
+
+    const novaArea = {
+      nome: nomeArea,
+      coordenadas: coordenadas,
+      area: area,
+      valor: area * 100
+    };
+
+    const resultado = await salvarArea(novaArea);
+    
+    if (resultado) {
+      alert('✅ Área salva com sucesso!');
+      // Não limpar coordenadas para manter seleção visível
+    } else {
+      alert('❌ Erro ao salvar área');
+    }
+  };
+
+  // Função para quando endereço for encontrado na busca
+  const handleCoordenadasEncontradas = (novasCoordenadas) => {
+    if (window.irParaLocalizacao) {
+      window.irParaLocalizacao(novasCoordenadas.lat, novasCoordenadas.lng);
+    }
+  };
+
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      backgroundColor: '#f3f4f6', 
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif'
-    }}>
-      <div style={{
-        maxWidth: '800px',
-        margin: '0 auto',
-        backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-        padding: '30px'
-      }}>
-        <h1 style={{
-          fontSize: '24px',
-          fontWeight: 'bold',
-          color: '#1f2937',
-          marginBottom: '10px'
-        }}>
-          🗺️ Seletor de Área no Mapa
-        </h1>
+    <ErrorBoundary>
+      <div style={{ minHeight: '100vh', backgroundColor: '#f3f4f6', padding: '20px' }}>
+        <Header 
+          titulo="🗺️ Seletor de Área - Mapa Real!"
+          subtitulo="Leaflet + OpenStreetMap + React.js + APIs Externas"
+        />
         
-        <p style={{
-          color: '#6b7280',
-          marginBottom: '20px'
-        }}>
-          Aplicação React funcionando no EasyPanel! ✅
-        </p>
+        {loading && (
+          <div style={{
+            backgroundColor: '#fef3c7',
+            border: '1px solid #f59e0b',
+            borderRadius: '8px',
+            padding: '12px',
+            margin: '20px 0',
+            textAlign: 'center'
+          }}>
+            ⏳ Carregando dados...
+          </div>
+        )}
+
+        {error && (
+          <div style={{
+            backgroundColor: '#fecaca',
+            border: '1px solid #ef4444',
+            borderRadius: '8px',
+            padding: '12px',
+            margin: '20px 0',
+            textAlign: 'center'
+          }}>
+            ❌ Erro: {error}
+          </div>
+        )}
         
-        <div style={{
-          backgroundColor: '#dbeafe',
-          padding: '16px',
-          borderRadius: '8px',
-          border: '1px solid #93c5fd'
-        }}>
-          <h2 style={{
-            fontSize: '18px',
-            color: '#1e40af',
-            marginBottom: '8px'
-          }}>
-            🎉 Status: FUNCIONANDO
-          </h2>
-          <p style={{
-            color: '#1d4ed8',
-            fontSize: '14px'
-          }}>
-            React carregado com sucesso! Pronto para adicionar o mapa.
-          </p>
+        <div style={{ display: 'flex', gap: '20px', marginTop: '20px' }}>
+          {/* Mapa Real */}
+          <div style={{ flex: 1 }}>
+              <ErrorBoundary>
+                <MapaReal 
+                  coordenadas={coordenadas}
+                  setCoordenadas={setCoordenadas}
+                  setArea={setArea}
+                  selecionando={selecionando}
+                  setSelecionando={setSelecionando}
+                />
+              </ErrorBoundary>
+          </div>
+          
+          {/* Painel lateral */}
+          <div style={{ width: '320px' }}>
+            {/* Buscador de endereço */}
+            <BuscadorEndereco 
+              onCoordenadasEncontradas={handleCoordenadasEncontradas}
+            />
+            
+            {/* Informações da seleção atual */}
+            <PainelInfo 
+              coordenadas={coordenadas}
+              area={area}
+              selecionando={selecionando}
+              onSalvar={handleSalvarArea}
+            />
+            
+            {/* APIs externas */}
+            <PainelApiExterna 
+              coordenadas={coordenadas?.inicio || coordenadas}
+            />
+            
+            {/* Lista de áreas salvas */}
+            <ListaAreas 
+              areas={areas}
+              onDeletar={deletarArea}
+              loading={loading}
+            />
+          </div>
         </div>
       </div>
-    </div>
+    </ErrorBoundary>
   );
 }
 
