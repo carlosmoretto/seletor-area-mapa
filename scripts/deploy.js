@@ -2,11 +2,6 @@
 const { exec } = require('child_process');
 const readline = require('readline');
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
 const mensagensAleatorias = [
   "feat: melhorias no mapa 🗺️",
   "fix: correções e ajustes 🔧", 
@@ -25,30 +20,48 @@ function deployRapido() {
   
   console.log('🚀 Deploy Rápido');
   console.log(`📝 Mensagem: ${commitMsg}`);
+  console.log('⏳ Executando comandos...');
   
   exec(`git add . && git commit -m "${commitMsg}" && git push origin main`, (error, stdout, stderr) => {
     if (error) {
       console.error(`❌ Erro: ${error.message}`);
-      return;
+      process.exit(1); // ← SAÍDA COM ERRO
     }
-    console.log('✅ Deploy concluído!');
+    
+    console.log('✅ Deploy concluído com sucesso!');
     if (stdout) console.log(stdout);
+    if (stderr) console.log(stderr);
+    
+    process.exit(0); // ← SAÍDA NORMAL
   });
 }
 
 function deployPersonalizado() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+
   rl.question('📝 Digite sua mensagem de commit: ', (mensagem) => {
     if (!mensagem.trim()) {
       mensagem = mensagensAleatorias[Math.floor(Math.random() * mensagensAleatorias.length)];
     }
     
+    console.log('⏳ Executando comandos...');
+    
     exec(`git add . && git commit -m "${mensagem}" && git push origin main`, (error, stdout, stderr) => {
+      rl.close(); // ← FECHAR READLINE PRIMEIRO
+      
       if (error) {
         console.error(`❌ Erro: ${error.message}`);
-      } else {
-        console.log('✅ Deploy concluído!');
+        process.exit(1); // ← SAÍDA COM ERRO
       }
-      rl.close();
+      
+      console.log('✅ Deploy concluído com sucesso!');
+      if (stdout) console.log(stdout);
+      if (stderr) console.log(stderr);
+      
+      process.exit(0); // ← SAÍDA NORMAL
     });
   });
 }
